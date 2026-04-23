@@ -1,0 +1,6 @@
+{
+  "name": "Mini AI Studio",
+  "description": "A streamlined chat interface for interacting with the Gemini API, featuring model selection and system instructions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

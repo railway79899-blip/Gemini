@@ -1,0 +1,81 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity Validation: Chat
+    function isValidChat(data, userId) {
+      return data.keys().hasAll(['title', 'userId', 'messagesJson', 'createdAt', 'updatedAt'])
+        && data.keys().size() == 5
+        && data.title is string
+        && data.title.size() <= 100
+        && data.userId is string
+        && data.userId == userId
+        && data.messagesJson is string
+        && data.messagesJson.size() <= 1000000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidChatUpdate(data, userId) {
+      return data.title is string
+        && data.title.size() <= 100
+        && data.userId is string
+        && data.userId == userId
+        && data.messagesJson is string
+        && data.messagesJson.size() <= 1000000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /users/{userId}/chats/{chatId} {
+      allow get: if isOwner(userId);
+      
+      allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+      
+      allow create: if isOwner(userId) 
+        && isValidId(chatId) 
+        && isValidChat(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+        
+      allow update: if isOwner(userId) 
+        && isValidId(chatId)
+        && isValidChatUpdate(incoming(), userId)
+        && existing().userId == userId
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'messagesJson', 'updatedAt']);
+        
+      allow delete: if isOwner(userId) 
+        && isValidId(chatId)
+        && existing().userId == userId;
+    }
+  }
+}

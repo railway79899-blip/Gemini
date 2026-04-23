@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "Chat": {
+      "title": "Chat",
+      "description": "A conversation with the AI model",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title of the chat"
+        },
+        "userId": {
+          "type": "string",
+          "description": "ID of the user who owns the chat"
+        },
+        "messagesJson": {
+          "type": "string",
+          "description": "JSON stringified array of messages"
+        },
+        "createdAt": {
+          "type": "timestamp"
+        },
+        "updatedAt": {
+          "type": "timestamp"
+        }
+      },
+      "required": [
+        "title",
+        "userId",
+        "messagesJson",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/chats/{chatId}": {
+      "schema": "Chat",
+      "description": "Conversations belonging to a user"
+    }
+  }
+}
